@@ -1,0 +1,9 @@
+[book]
+authors = ["wsm25"]
+language = "zh-CN"
+multilingual = false
+src = "src"
+title = "rCore-OS 笔记"
+
+[output.html.playground]
+runnable = false
