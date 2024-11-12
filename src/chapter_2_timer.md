@@ -149,7 +149,6 @@ fn task3() {
     loop {
         print!("\r[task3] current time: {}", csr::time::read());
     }
-    // task_exit();
 }
 ```
 

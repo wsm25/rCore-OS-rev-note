@@ -1,12 +1,17 @@
 # 环境配置
 
-本书就用 WSL/Ubuntu 了。其他环境可以参考 [原书](https://rcore-os.cn/rCore-Tutorial-Book-v3/chapter0/5setup-devel-env.html)。
+本书的环境如下：
+- Ubuntu 22.04, x86_64 Linux 5.15.153.1-microsoft-standard-WSL2
+- cargo 1.82.0, rustc 1.82.0
+- QEMU emulator version 9.1.1, OpenSBI v1.5.1
+
+其他环境的配置可以参考 [原书](https://rcore-os.cn/rCore-Tutorial-Book-v3/chapter0/5setup-devel-env.html)。
 
 ## Rust
 
-本书假定读者应当已经至少安装了 rustup 和 cargo 并配置了镜像，本书不再赘述。
+本书假定读者应当已经至少安装了 rustup 和 cargo 并配置了镜像，在此不再赘述。
 
-rCore-OS 强依赖于 risc-v 架构，因此需要安装 riscv 工具链：
+rCore-OS 强依赖于 riscv 架构，因此需要安装 riscv 工具链：
 
 ```bash
 rustup target add riscv64gc-unknown-none-elf
@@ -14,16 +19,12 @@ rustup target add riscv64gc-unknown-none-elf
 
 ## Qemu
 
-Qemu 实现了 risc-v sbi，也相当轻量，很适合作为我们迷你 OS 的宿主。
+Qemu 实现了自带 OpenSBI，也相当轻量，很适合作为我们迷你 OS 的宿主。我就直接用写作日 (2024/10) 最新 release 9.1.1 了。最新的 wsl 已经支持了图形界面，可以链接 sdl 库。
 
-我就直接用写作日 (2024/10) 最新 release 9.1.1 了
-
-最新的 wsl 已经支持了图形界面，可以链接 sdl 库。
-
-在拥有正常程序员环境 (C Compiler, Python3, pkg-config) 后安装下面的东西（缺啥装啥）
+在拥有常规编译环境 (C Compiler, Python3, pkg-config) 后安装下面的东西（缺啥装啥）
 
 ```bash
-# requirement
+# dependency
 pip install tomli
 sudo apt install ninja-build libglib2.0-dev libslirp-dev libsdl2-dev
 # download and compile
@@ -110,10 +111,10 @@ Boot HART MEDELEG         : 0x0000000000f0b509
 ```bash
 sudo apt install gdb-multiarch # 安装
 qemu-system-riscv64 -nographic -kernel target/riscv64gc-unknown-none-elf/release/os -machine virt -s -S # debug 启动虚拟机并等待
-gdb-multiarch -ex 'target remote localhost:1234' # debug
+gdb-multiarch -ex 'target remote localhost:1234' target/riscv64gc-unknown-none-elf/release/os # debug
 ```
 
-处理一些控制流怪异的疑难杂症时有奇效。建议 `Cargo.toml` 中添加
+处理一些控制流怪异的疑难杂症时有奇效。建议在 debug 时 `Cargo.toml` 中添加
 
 ```toml
 [profile.release]
@@ -124,4 +125,4 @@ debug 更丝滑！
 
 ## VSCode
 
-如果你和本书一样用的是 VSCode 开发，建议把 Workspace 里的 `rust-analyzer.cargo.allTargets` 设为 false。
+如果你和本书一样用的是 VSCode 开发，建议把 Workspace 里的 `rust-analyzer.cargo.allTargets` 设为 false。从而禁用依赖 std 的 `test` target。

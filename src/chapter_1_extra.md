@@ -110,8 +110,7 @@ pub fn clear_bss() {
 
 我们有了栈，何不实现一个堆呢？
 
-
-我们来实现一个最简单的内存管理模块。它预分配了一大块堆(4M)，维护着不同长度的指针列表。在 malloc 被调用时，若对应列表非空则直接出队返回；若空则从 heap 中“切”一块内存出来返回。在 free 时若能合并回 heap 则合并，不能则插入列表。
+我们来实现一个最简单的内存管理模块。它初始拥有一大块堆(4M)，维护着不同长度的指针链表。在 malloc 被调用时，若对应列表非空则直接出栈返回；若空则从 heap 中“切”一块内存出来返回。在 free 时直接插回链表。
 
 在 bss 段中加入 `.bss.heap` 部分：
 
@@ -202,7 +201,7 @@ unsafe impl GlobalAlloc for RosAlloc {
             return core::ptr::null_mut()
         }
         let (id, real_size) = size_to_index(size as u32);
-        let real_size = real_size as usize*8;
+        let real_size = real_size as usize * 8;
         let id = id as usize;
         if id >= MLIST_LEN { // too large
             return core::ptr::null_mut()
@@ -236,7 +235,9 @@ unsafe impl GlobalAlloc for RosAlloc {
 }
 ```
 
-当然真实实现会有更多合并、内存返还、升高 heap top、快速列表等操作，但我们这里就怎么简单怎么来。
+然后就可以通过 `extern crate alloc` 使用 `Box`, `Vec` 等动态分配内存的容器啦！
+
+当然真实实现会有更多合并、内存返还、升高 heap top、快速列表、大页分配等操作，但我们这里就怎么简单怎么来。
 
 ## 后记
 

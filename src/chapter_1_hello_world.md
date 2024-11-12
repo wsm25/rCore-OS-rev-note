@@ -38,15 +38,15 @@ fn handle_panic(_: &core::panic::PanicInfo) -> ! {
 [RISC-V SBI](https://github.com/riscv-non-isa/riscv-sbi-doc/)
 是 RISC-V 特有的 Suprtvisor 接口集。它定义了一系列一个 RISC-V firmware 应该实现的 ecall。
 
-现在只要暂时认为我们用到的 OpenSBI 是宿主机和虚拟机之间的桥梁就行。这里就用到了
+现在只要暂时认为我们用到的 ecall 是宿主机和虚拟机之间的桥梁就行。这里就用到了
 [System Reset Extension](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/src/ext-sys-reset.adoc)，
 实现了虚拟机的关机/宿主程序的结束。
 
 后面是一个 `panic_handler`，这是 Rust no_std 程序必要的一部分，以处理异常；这里就先死循环了，反正用不到。
 
-当然，现在还是没法编译运行的。首先，我们要让入口点指向 `_start`；其次，在 QEMU 里只有 `0x80000000`
+当然，现在编译产物还是没法运行的。首先，我们要让入口点指向 `_start`；其次，在 QEMU 里只有 `0x80000000`
 之后的空间是可用的，因此我们要让链接器把所有东西的绝对地址放在 `0x80000000` 之后且不能和 bios
-重叠。我们就选国际惯例的 `0x80200000` 了。
+重叠。我们就选国际惯例的 `0x80200000` 入口了。
 
 这可以通过 ldscript 实现：
 
@@ -140,7 +140,7 @@ targets = ["riscv64gc-unknown-none-elf"]
 `qemu-system-riscv64 -nographic -kernel target/riscv64gc-unknown-none-elf/release/os -machine virt`
 运行，虚拟机没有卡住而是直接结束，运行成功！
 
-启动过程具体发生了什么不在本书讨论范围内；若感兴趣可以参考 [RISC-V SBI and the full boot process](https://popovicu.com/posts/risc-v-sbi-and-full-boot-process/) 和 [原书](https://rcore-os.cn/rCore-Tutorial-Book-v3/chapter1/4first-instruction-in-kernel2.html#id5)。（这里指定了 `-machine virt` 因为实测在默认 ucbbar,spike-bare 下 opensbi 不支持 sbi system reset extension，关不了机）
+启动过程具体发生了什么不在本书讨论范围内；若感兴趣可以参考 [RISC-V SBI and the full boot process](https://popovicu.com/posts/risc-v-sbi-and-full-boot-process/) 和 [原书](https://rcore-os.cn/rCore-Tutorial-Book-v3/chapter1/4first-instruction-in-kernel2.html#id5)。（这里指定了 `-machine virt` 因为实测在默认 ucbbar,spike-bare 下关不了机）
 
 ## 真 · Hello World
 
@@ -151,9 +151,7 @@ Rust。更重要的是，说好的 hello, world，至少要按照国际惯例看
 
 ### Rust 调用
 
-实现想法很简单：设置好（内核）栈空间，然后调用 `rust_main`。
-
-我们在汇编里分配好栈空间供函数使用 (64K)：
+实现想法很简单：设置好（内核）栈空间，然后调用 `rust_main`。我们在汇编里分配好栈空间供函数使用 (64K)：
 
 `entry.asm`
 ```riscv
@@ -249,6 +247,8 @@ macro_rules! println {
 
 可以看到，我们基于 `console_write` 接口实现了一个 `core::fmt::Write` 的 `Stdout`；
 Rust 会帮助我们利用它实现 `write_fmt`，从而实现 `print` 和 `println` 宏。
+
+p.s. 实测 rCore-OS 项目提供的旧版 rustsbi 不支持 `console_write`；只能用旧版的逐字符输出。
 
 终于可以实现我们的真 · Hello World 了：
 

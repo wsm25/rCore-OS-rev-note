@@ -18,10 +18,11 @@ pub enum Task {
 我们用一个循环队列来储存任务列表。
 
 ```rust
+const MAX_TASKS: usize = 64;
 static mut TASK_SCHEDULE: heapless::Deque<Task, MAX_TASKS> = heapless::Deque::new();
 ```
 
-> 这里用到了 [`heapless`](https://crates.io/crates/heapless) 库。它是一个静态分配空间的容器 (collection) 库。在实现动态内存分配之前，我们将使用此库代替标准库的一些容器。
+> 这里用到了 [`heapless`](https://crates.io/crates/heapless) 库。它是一个静态分配空间的容器 (collection) 库。由于动态分配的容器在生命周期管理上十分令人头痛，因此我们采用不需要动态初始化、不需要销毁的静态容器。
 
 上面任务定义中的 `id` 唯一对应一个静态的 Task Storage 块：
 
@@ -39,7 +40,6 @@ impl<const N: usize> Stack<N> {
     }
 }
 
-const MAX_TASKS: usize = 64;
 const MAX_RUNNING_TASKS: usize = 4;
 const STACK_SIZE: usize = 0x2000-0x80; // 8k storage block
 
@@ -135,6 +135,8 @@ TASK_STORAGE[next_id].context.sp = TASK_STORAGE[next_id].stack.stack_top();
 TASK_STORAGE[next_id].context.ra = entry as usize;
 ```
 
+这里最值得深思的是 `ra` 寄存器：对于一个 yield context，到这里 `ra` 应该是 `task_yield` 函数本身 `call __switch` 下一条指令地址，这样切换回来时可以执行完 `task_yield` 函数内剩余的指令；而我们新建的上下文却是直接把 `ra` 设为 entry，看起来有点不对称；读者可以思考有没有更优美的做法。
+
 其他流程就和 yield task 一样啦。
 
 最终完整实现如下：
@@ -172,7 +174,7 @@ pub fn task_yield() { unsafe {
 
 exit 其实和 yield 差不多，就是当前任务的上下文直接不要了，切到下一个任务。
 
-由于栈内存很宝贵，我们用一个静态变量来当“垃圾桶”
+由于栈内存很宝贵，我们用一个静态变量来当“垃圾桶”（如果沿用 `TASK_STORAGE[CURRENT_ID].context` 会发生什么？）
 
 ```rust
 static mut DUMMY_CONTEXT: TaskContext = unsafe{core::mem::zeroed()};
