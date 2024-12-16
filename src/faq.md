@@ -19,3 +19,5 @@
 1. 控制流产生了异常但是上级 trap handler 只是输出，没有处理直接返回，导致反复异常
 2. 控制流调用了 console ecall 但是 trap handler 没有修改 sepc/mepc 跳转到下一条指令，导致 ecall 被反复调用
 
+## 杂烩
+- 建议开 O3 优化，它会按编译器理解激进优化代码，使 ill-formed 代码无处遁形
