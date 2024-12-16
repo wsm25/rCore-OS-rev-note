@@ -17,22 +17,22 @@ impl core::fmt::Write for Stdout {
     }
 }
 
-/// print string macro
+/// kernel print string macro
 #[macro_export]
 macro_rules! kprint {
     ($fmt: literal $(, $($arg: tt)+)?) => {
         use ::core::fmt::Write;
-        write!($crate::console::Stdout, $fmt $(, $($arg)+)?).unwrap()
+        let _ = write!($crate::console::Stdout, $fmt $(, $($arg)+)?);
     }
 }
 
-/// println string macro
+/// kernel println string macro
 #[macro_export]
 macro_rules! kprintln {
-    ($fmt: literal $(, $($arg: tt)+)?) => {
+    ($fmt: literal $(, $($arg: tt)+)?) => {{
         use ::core::fmt::Write;
-        writeln!($crate::console::Stdout, $fmt $(, $($arg)+)?).unwrap()
-    }
+        let _ = writeln!($crate::console::Stdout, $fmt $(, $($arg)+)?);
+    }}
 }
 
 pub fn puts(b: &str) {
@@ -123,16 +123,17 @@ pub fn clear_bss() {
 
 ## 堆内存分配
 
-设计内存 Layout 如下（从 `0x40000000` 开始）：
+设计内存区域如下（从 `0x40000000` 开始）：
 
 | 区域 | 大小 | 作用 |
 | - | - | - |
 | [0, 0x7c000) | 496kB | 初始堆 |
-| [0x7c000, 0x80000) | 16kB | 内核栈 |
-| [0x80000, 0x100000) | 512kB | 内核代码 |
-| [0x100000, 0x2000000) | 31.5MB | 额外堆 |
+| [0x7c000, 0x80000) | 16 kB | 内核栈 |
+| [0x80000, 0x100000) | 512 kB | 内核代码 |
+| [0x100000, 0x2000000) | 31 MB | 额外堆 |
 
 我们基于 [talc](https://github.com/SFBdragon/talc) 实现堆。
+
 `Cargo.toml`
 ```toml
 [dependencies]
