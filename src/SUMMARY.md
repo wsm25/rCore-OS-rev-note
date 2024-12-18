@@ -11,3 +11,5 @@
   - [环境配置](./ch2/env.md)
   - [Hello, World!](./ch2/hello_world.md)
   - [额外工作](./ch2/extra.md)
+- [最小内核 - 多任务系统](./ch3/index.md)
+  - [异步逃课](./ch3/async.md)

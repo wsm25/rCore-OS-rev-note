@@ -20,10 +20,10 @@ impl core::fmt::Write for Stdout {
 /// kernel print string macro
 #[macro_export]
 macro_rules! kprint {
-    ($fmt: literal $(, $($arg: tt)+)?) => {
+    ($fmt: literal $(, $($arg: tt)+)?) => {{
         use ::core::fmt::Write;
         let _ = write!($crate::console::Stdout, $fmt $(, $($arg)+)?);
-    }
+    }}
 }
 
 /// kernel println string macro
@@ -98,7 +98,7 @@ fn handle_panic(info: &core::panic::PanicInfo) -> ! {
 }
 ```
 
-> 这里启用了内核态的浮点单元。常规的内核中不会启用浮点，但我们为了 debug 方便还是启用他吧
+> 这里启用了内核态的浮点单元。常规的内核中不会启用浮点，但我们为了方便还是启用他吧
 
 输出 `Kernel Panicked at src/main.rs:23 Hello, Rust!🎉, 0x1`
 
@@ -186,6 +186,6 @@ pub fn rust_main(_: usize) -> ! {
 
 ## 后记
 
-至此，我们已经配置好了环境，实现了最基本的内存分配和打印输出。我们的未来一片光明！
+至此，我们已经配置好了环境，实现了最基本的内存分配和打印输出。我们的前途一片光明啊（赞赏）！
 
-btw 当前指令数已经到了 2.2k，总大小 13.2kB ；对于内核而言是很小的，但是某些单片机已经放不下了。究其原因 (`cargo bloat`) 是 `memcpy` 和 `core::fmt` 就要占掉 5kB 代码；再加上 panic 的 debug message 巨多，因而占用空间巨大。Rust 这是为了性能和便利而牺牲空间啊！
+btw 当前指令数已经到了 2.2k，总大小 13.2kB ；对于内核而言是很小的，但是某些单片机已经放不下了。究其原因 (`cargo bloat`) 是 `memcpy` 和 `core::fmt` 就要占掉 5kB 代码；`talc` crate 也要 4kB 空间；再加上 panic 的 debug message 巨多，因而占用空间巨大。Rust 这是为了性能和便利而牺牲空间啊！
