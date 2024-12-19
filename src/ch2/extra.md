@@ -184,8 +184,66 @@ pub fn rust_main(_: usize) -> ! {
 
 输出 `Hello, Rust!🎉 @ 0x40000410`。可以通过 `extern crate alloc` 使用 `Box`, `Vec` 等动态分配内存的容器啦！
 
+
+## LateInit
+
+> OnceCell 什么的补药口牙……
+
+对于一些需要堆内存分配的对象，如果要成为全局变量似乎有点困难，因为 Rust static 变量要求编译时初始化，以保持 Rust 本身的 soundness；甚至在 nightly 所有 static mut 的方法调用都会报 `static_mut_refs`。从而诞生了一堆 OnceCell、OnceLock 之类的玩意，他们维护了一个额外的初始化状态，在第一次访问时进行初始化。很美好，可惜对于我们寸内存寸金的内核还是重了点（生成代码太多了！）。
+
+C 一般的实现方式是允许未初始化的静态变量，而在程序最开始、未使用之前初始化，由编码者来保证 soundness。这显然与 safe Rust 要求相违背，但看着多诱人啊！更严苛的是，Rust 静态变量的可变访问都是 unsafe 的，这是由于多核可能产生竞争；但对于目前的单核硬件来说，这其实很 safe。
+
+我们通过一个 `LateInit` 类允许这样的操作，绕过 Rust 的限制。
+
+```rust
+use core::{cell::UnsafeCell, mem::MaybeUninit};
+
+/// late init cell
+#[repr(transparent)]
+pub struct LateInit<T> {
+    inner: UnsafeCell<MaybeUninit<T>>
+}
+
+unsafe impl<T> Sync for LateInit<T> {}
+
+impl<T> LateInit<T> {
+    pub const fn uninit() -> Self {
+        Self{inner: UnsafeCell::new(MaybeUninit::uninit())}
+    }
+    /// set cell into value. note that original value will not be dropped
+    pub fn write(&self, val: T) {
+        unsafe{(*self.inner.get()).write(val)};
+    }
+    /// drop inner value. its inner must have been initialized
+    pub unsafe fn drop(&self) {
+        (*self.inner.get()).assume_init_drop();
+    }
+    /// get pointer. note you should init it before dereference, and
+    /// drop any generated reference immediately after use
+    pub const fn get(&self) -> *mut T {
+        unsafe{(*self.inner.get()).as_mut_ptr()}
+    }
+}
+```
+
+然后就可以通过 `LateInit::uninit()` 创建 static 变量，`LateInit::write(val)` 初始化变量，`LateInit::get()` 访问变量了。如果要追求 soundness 可以在程序退出时调用 `drop`。
+
+## uninit
+
+`core::mem::uninitialized` 已经弃用了，我们做一个它：
+
+```rust
+pub unsafe fn uninit<T>() -> T {
+    let x = core::mem::MaybeUninit::uninit();
+    x.assume_init()
+}
+```
+
 ## 后记
 
 至此，我们已经配置好了环境，实现了最基本的内存分配和打印输出。我们的前途一片光明啊（赞赏）！
 
-btw 当前指令数已经到了 2.2k，总大小 13.2kB ；对于内核而言是很小的，但是某些单片机已经放不下了。究其原因 (`cargo bloat`) 是 `memcpy` 和 `core::fmt` 就要占掉 5kB 代码；`talc` crate 也要 4kB 空间；再加上 panic 的 debug message 巨多，因而占用空间巨大。Rust 这是为了性能和便利而牺牲空间啊！
+btw 当前指令数已经到了 2.2k，总大小 9.0kB ；对于内核而言是很小的，但是某些单片机已经放不下了。究其原因 (`cargo bloat`) 是 `memcpy` 和 `core::fmt` 就要占掉 4kB 代码；`talc` crate 也要 2kB 空间；再加上 panic 的 debug message 巨多，因而占用空间巨大。Rust 这是为了性能和便利而牺牲空间啊！
+
+如果要放到单片机上，建议开 [`build-std`](https://doc.rust-lang.org/cargo/reference/unstable.html#build-std) 选项，用 thumb 指令集，实测能把总大小压到 4kB。
+

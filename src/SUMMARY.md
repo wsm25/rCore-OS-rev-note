@@ -12,4 +12,6 @@
   - [Hello, World!](./ch2/hello_world.md)
   - [额外工作](./ch2/extra.md)
 - [最小内核 - 多任务系统](./ch3/index.md)
+  - [上下文](./ch3/context.md)
+  - [任务切换](./ch3/schedule.md)
   - [异步逃课](./ch3/async.md)

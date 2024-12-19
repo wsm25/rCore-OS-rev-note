@@ -52,7 +52,7 @@ btw 栈为什么从高向低呢？我个人认为是历史因素：Intel 为 x86
 
 操作系统权限设计基于硬件特权级机制支持。所有现代 CPU 架构都实现了特权级机制和软中断指令：
 - x86: ring0（宿主/OS）和 ring3 （用户），syscall 指令
-- arm：EL2/3（宿主）, EL1（OS）和 EL0（用户），swi/svc 指令
+- arm-a：EL2/3（宿主）, EL1（OS）和 EL0（用户），swi/svc 指令
 - riscv：M（宿主），S（OS）和 U（用户），ecall 指令
 
 （LoongArch? 不熟...）

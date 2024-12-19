@@ -153,19 +153,19 @@ SECTIONS
         *(.text .text.*)
     }
 
-    . = ALIGN(4K);
+    . = ALIGN(16);
     .rodata : {
         *(.rodata .rodata.*)
         *(.srodata .srodata.*)
     }
 
-    . = ALIGN(4K);
+    . = ALIGN(16);
     .data : {
         *(.data .data.*)
         *(.sdata .sdata.*)
     }
 
-    . = ALIGN(4K);
+    . = ALIGN(16);
     .bss : {
         *(.bss.heap)
         *(.bss.stack)
@@ -174,7 +174,7 @@ SECTIONS
         *(.sbss .sbss.*)
     }
 
-    . = ALIGN(4K);
+    . = ALIGN(16);
     ebss = .;
     ekernel = .;
 
